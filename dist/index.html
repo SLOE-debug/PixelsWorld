@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/colorpicker.css">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="menu">
+        <div style="width:80%;height: 50%;">
+            <div class="menu-item" id="modifyPerson">
+                修改人物模型
+            </div>
+        </div>
+    </div>
+    <div id="operation">
+        <div style="width:80%;height: 50%;">
+            <div class="operation-item" id="limbtitle"> 头 </div>
+            <div class="operation-item">
+                <div class="operation-lable">
+                    颜色：
+                </div>
+                <div id="colorSelector">
+                    <div style="background-color: rgb(135, 135, 255);"></div>
+                </div>
+            </div>
+            <div class="operation-item">
+                <div class="operation-lable">
+                    高度：
+                </div>
+                <div class="operation-control">
+                    <input type="number" name="" id="limbheight">
+                </div>
+            </div>
+            <div class="menu-item" id="operationSave">保存</div>
+        </div>
+    </div>
+    <div id="back"><i class="fa fa-chevron-left" aria-hidden="true"></i></div>
+    <canvas id="c"></canvas>
+    <script src="./main.js"></script>
+    <!-- <script src="./colorpicker.js"></script> -->
+</body>
+
+</html>
