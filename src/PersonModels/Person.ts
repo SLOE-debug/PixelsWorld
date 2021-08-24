@@ -76,9 +76,8 @@ export default class {
     },
   ];
   private i = 0;
-  scene: THREE.Scene;
-  constructor(_scene: THREE.Scene) {
-    this.scene = _scene;
+  constructor(_limbs?: Array<limb>) {
+    if (_limbs) this.limbs = _limbs;
     this.Builder();
   }
 
@@ -93,7 +92,7 @@ export default class {
       }
     });
     this.personArea.position.y -= 0.5;
-    this.scene.add(this.personArea);
+    drawCore.scene.add(this.personArea);
   }
   private createLimb({
     name,
@@ -119,6 +118,6 @@ export default class {
       m.geometry.dispose();
       this.personArea.remove(m);
     });
-    this.scene.remove(this.personArea);
+    drawCore.scene.remove(this.personArea);
   }
 }
