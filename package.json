@@ -1,0 +1,32 @@
+{
+  "name": "PixelsWorld",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "watch": "webpack --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jquery": "^3.5.6",
+    "@types/three": "^0.131.0",
+    "css-loader": "^6.2.0",
+    "file-loader": "^6.2.0",
+    "jquery": "^3.6.0",
+    "style-loader": "^3.2.1",
+    "three": "^0.131.3",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.3.5",
+    "webpack": "^5.51.1",
+    "webpack-cli": "^4.8.0"
+  },
+  "dependencies": {
+    "@three-ts/orbit-controls": "^1.4.7",
+    "@types/dat.gui": "^0.7.7",
+    "dat.gui": "^0.7.7"
+  }
+}
