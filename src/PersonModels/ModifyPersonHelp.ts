@@ -2,6 +2,7 @@ import * as THREE from "three";
 import Person from "./Person";
 import colorpicker from "../units/colorpicker";
 import * as $ from "jquery";
+import { defaultLimbs } from "../units/common";
 
 export default class {
   private line: THREE.LineSegments;
@@ -12,13 +13,34 @@ export default class {
     limbtitle: {},
     limbheight: {
       input: (e) => {
-        this.ReRender(this.index, "height", (e.target as any).value);
+        this.ReRender(
+          this.index,
+          "height",
+          parseFloat((e.target as any).value)
+        );
       },
     },
     operationSave: {
       click: () => {
         localStorage.setItem("personInfo", JSON.stringify(this.person.limbs));
         alert("保存成功！");
+      },
+    },
+    limbsize: {
+      input: (e) => {
+        this.ReRender(this.index, "size", parseFloat((e.target as any).value));
+      },
+    },
+    operationReset: {
+      click: () => {
+        localStorage.removeItem("personInfo");
+        this.person.limbs = defaultLimbs();
+        this.person.reBuilderPerson();
+      },
+    },
+    limbZ: {
+      input: (e) => {
+        this.ReRender(this.index, "z", parseFloat((e.target as any).value));
       },
     },
   };
@@ -48,15 +70,19 @@ export default class {
   }
 
   public set enabled(v: boolean) {
-    if (!v) drawCore.scene.remove(this.line);
+    if (!v) {
+      this.person.state = "none";
+      drawCore.scene.remove(this.line);
+    } else {
+      this.person.state = "modify";
+    }
     this._enabled = v;
   }
 
   private ReRender(index, propName, value) {
     if (index >= 0) {
-      this.person.destroy();
       this.person.limbs[index][propName] = value;
-      this.person.Builder();
+      this.person.reBuilderPerson();
     }
   }
 
@@ -92,6 +118,14 @@ export default class {
       });
       this["limbtitle"].text(mesh.name);
       this["limbheight"].val(this.person.limbs[this.index].height.toString());
+      this["limbsize"].val(this.person.limbs[this.index].size.toString());
+      this["limbsize"].attr(
+        "max",
+        this.person.limbs[this.index].max.toString()
+      );
+      this["limbZ"].val(this.person.limbs[this.index].z?.toString());
+      if (mesh.userData["type"] != "eye") this["limbZ"].attr("disabled", true);
+      else this["limbZ"].attr("disabled", false);
     }
   }
 }

@@ -3,12 +3,13 @@ import * as $ from "jquery";
 import Person from "../PersonModels/Person";
 import ModifyPersonHelp from "../PersonModels/ModifyPersonHelp";
 import * as THREE from "three";
+import Startup from "../kernel/Startup";
+
+import { gsap } from "gsap";
 
 class Entry {
-  modifyPersonHelp: ModifyPersonHelp;
-  person: Person;
   showArea = [
-    ["menu", "modifyPerson"],
+    ["menu", "modifyPerson", "paly"],
     ["back", "operation"],
   ];
   eles = {
@@ -16,59 +17,89 @@ class Entry {
     operation: {},
     back: {
       click: () => {
-        this.controlMenu(false, this.showArea[0], this.orbitCamera);
-        this.orbitCamera.reset();
+        // this.light.visible = true;
+        // this.wallmesh.visible = true;
+        this.startup?.destroy();
+        this.controlMenu(false, this.showArea[0], false);
       },
     },
     modifyPerson: {
       click: () => {
-        this.controlMenu(true, this.showArea[1], this.orbitCamera);
+        this.controlMenu(true, this.showArea[1]);
+      },
+    },
+    paly: {
+      click: () => {
+        this.controlMenu(true, ["back"], false);
+        this.modifyPersonHelp.enabled = false;
+        this.startup = new Startup(this.person);
+        // this.light.visible = false;
+        // this.wallmesh.visible = false;
       },
     },
   };
+  startup: Startup;
+  modifyPersonHelp: ModifyPersonHelp;
+  person: Person;
   orbitCamera: OrbitControls;
+  light: THREE.DirectionalLight;
+  globalLight: THREE.AmbientLight;
+  wallmesh: THREE.Mesh;
   constructor() {
     this.createPersonArea().createLight().createFloor();
-    drawCore.drawActivity["EntryAutoRotate"] = () => {
-      this.orbitCamera.update();
-    };
     for (const id in this.eles) {
       this[id] = $("#" + id);
       for (const eName in this.eles[id]) {
         (this[id] as JQuery<HTMLElement>).on(eName, this.eles[id][eName]);
       }
     }
+    gsap.to(this.person.personArea.rotation, {
+      duration: 1,
+      y: Math.PI * 2,
+      ease: "bounce",
+    });
   }
 
   private createPersonArea() {
-    this.orbitCamera = new OrbitControls(drawCore.camera, drawCore.canvas);
-    this.orbitCamera.target.set(0, 2, 0);
-    this.orbitCamera.saveState();
-    this.orbitCamera.enabled = false;
-    this.orbitCamera.enableZoom = false;
-    this.orbitCamera.autoRotate = true;
-    this.orbitCamera.maxPolarAngle = Math.PI / 2 + 0.3;
-    this.orbitCamera.enableDamping = true;
-    this.orbitCamera.enableKeys = false;
-    this.orbitCamera.rotateSpeed = 0.5;
-    this.orbitCamera.update();
+    this.createOrbitCamera(false);
     this.person = new Person(JSON.parse(localStorage.getItem("personInfo")));
     this.modifyPersonHelp = new ModifyPersonHelp(this.person);
     return this;
   }
 
+  private createOrbitCamera(enabled) {
+    if (this.orbitCamera) this.orbitCamera.dispose();
+    drawCore.camera.position.set(0, 10, 40);
+    this.orbitCamera = new OrbitControls(drawCore.camera, drawCore.canvas);
+    this.orbitCamera.target.set(0, 10, 0);
+    this.orbitCamera.enabled = enabled;
+    this.orbitCamera.enableZoom = false;
+    this.orbitCamera.maxPolarAngle = Math.PI / 2 + 0.2;
+    this.orbitCamera.enableDamping = true;
+    this.orbitCamera.keys = {
+      UP: 87,
+      BOTTOM: 83,
+      LEFT: 65,
+      RIGHT: 68,
+    };
+    this.orbitCamera.keyPanSpeed = 20;
+    this.orbitCamera.enableKeys = true;
+    this.orbitCamera.rotateSpeed = 0.5;
+    this.orbitCamera.update();
+  }
+
   private createLight() {
-    let light = new THREE.DirectionalLight("white", 1);
-    light.position.set(-10, 21, 15);
-    light.target.position.set(0, -3, 8);
-    light.shadow.camera.bottom = -20;
-    light.shadow.camera.top = 20;
-    light.shadow.camera.near = 0.1;
-    light.shadow.camera.far = 100;
-    light.castShadow = true;
-    drawCore.scene.add(light);
-    let globalLight = new THREE.AmbientLight("white", 0.6);
-    drawCore.scene.add(globalLight);
+    this.light = new THREE.DirectionalLight("white", 1);
+    this.light.position.set(-10, 21, 15);
+    this.light.target.position.set(0, -3, 8);
+    this.light.shadow.camera.bottom = -20;
+    this.light.shadow.camera.top = 50;
+    this.light.shadow.camera.near = 0.1;
+    this.light.shadow.camera.far = 100;
+    this.light.castShadow = true;
+    drawCore.scene.add(this.light);
+    this.globalLight = new THREE.AmbientLight("white", 0.6);
+    drawCore.scene.add(this.globalLight);
     return this;
   }
 
@@ -78,19 +109,19 @@ class Entry {
       color: "#EE6B3C",
       side: THREE.DoubleSide,
     });
-    let wallmesh = new THREE.Mesh(wall, wallmater);
-    wallmesh.rotation.x = Math.PI / 2;
-    wallmesh.position.set(0, -12.5, 0);
-    wallmesh.receiveShadow = true;
-    drawCore.scene.add(wallmesh);
+    this.wallmesh = new THREE.Mesh(wall, wallmater);
+    this.wallmesh.rotation.x = Math.PI / 2;
+    this.wallmesh.position.set(0, 0, 0);
+    this.wallmesh.receiveShadow = true;
+    drawCore.scene.add(this.wallmesh);
   }
 
   private controlMenu(
     enabled: boolean,
     showEles: Array<string>,
-    orbitCamera: OrbitControls
+    orbitCameraEnabled: boolean = true
   ) {
-    orbitCamera.autoRotate = !enabled;
+    this.createOrbitCamera(orbitCameraEnabled);
     for (const id in this.eles) {
       (this[id] as JQuery<HTMLElement>).css({
         display: "none",
@@ -102,7 +133,7 @@ class Entry {
       });
     });
     this.modifyPersonHelp.enabled = enabled;
-    orbitCamera.enabled = enabled;
+    this.person.reposition();
   }
 }
 

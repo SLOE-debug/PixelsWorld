@@ -1,8 +1,19 @@
 import * as THREE from "three";
+import * as Stats from "stats.js";
 
 class DrawCore {
   public scene: THREE.Scene;
-  public camera: THREE.PerspectiveCamera;
+  private oldcameras: Array<THREE.PerspectiveCamera> = [];
+  private _camera: THREE.PerspectiveCamera;
+  public get camera(): THREE.PerspectiveCamera {
+    return this._camera;
+  }
+  public set camera(v: THREE.PerspectiveCamera) {
+    if (this._camera) this.oldcameras.push(this._camera.clone());
+    this._camera = v;
+  }
+
+  private stats: Stats;
   public canvas: HTMLCanvasElement;
   public render: THREE.WebGLRenderer;
   public drawActivity: { [x: string]: Function } = {};
@@ -15,12 +26,25 @@ class DrawCore {
       0.1,
       1000
     );
-    this.camera.position.set(0, 2, 40);
+    this.camera.position.set(0, 10, 40);
     this.canvas = document.getElementById("c") as HTMLCanvasElement;
-    this.render = new THREE.WebGLRenderer({ canvas: this.canvas });
+    this.render = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: true,
+    });
     this.render.shadowMap.enabled = true;
     this.render.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.stats = new Stats();
+    this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    document.body.appendChild(this.stats.dom);
     requestAnimationFrame(this.draw.bind(this));
+  }
+
+  public backCamera() {
+    if (this.oldcameras.length > 0) {
+      this._camera = this.oldcameras[0];
+      this.oldcameras.shift();
+    }
   }
 
   private ResetSize() {
@@ -33,6 +57,7 @@ class DrawCore {
 
   private draw(t) {
     requestAnimationFrame(this.draw.bind(this));
+    this.stats.begin();
     if (this.ResetSize()) {
       this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
       this.camera.updateProjectionMatrix();
@@ -40,6 +65,7 @@ class DrawCore {
     for (const func in this.drawActivity) {
       this.drawActivity[func](t);
     }
+    this.stats.end();
     this.render.render(this.scene, this.camera);
   }
 }

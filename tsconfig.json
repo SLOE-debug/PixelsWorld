@@ -8,7 +8,7 @@
     "experimentalDecorators": true,
     "moduleResolution": "Node",
     "module": "CommonJS",
-    "target": "es5",
+    "target": "es6",
     "baseUrl": "./",
     "typeRoots": ["./node_modules/@types", "./types"],
     "lib": ["dom", "es5", "es2015"],

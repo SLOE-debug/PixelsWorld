@@ -15,7 +15,7 @@ body {
   height: 100%;
 }
 
-input,
+.c_input,
 select {
   -webkit-appearance: none;
   background-color: #fff;
@@ -35,13 +35,13 @@ select {
   width: 100%;
   font-size: 18px;
 }
-input::placeholder {
+.c_input::placeholder {
   color: #c0c4cc;
 }
-input:focus {
+.c_input:focus {
   border: 1px solid #409eff;
 }
-input:hover {
+.c_input:hover {
   border-color: #c0c4cc;
 }
 
@@ -71,6 +71,7 @@ input:hover {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 .menu-item:hover {
