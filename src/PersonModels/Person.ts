@@ -68,19 +68,32 @@ export default class {
     window.addEventListener("keyup", this.Activity.bind(this, true));
     window.addEventListener("mousemove", this.CameraMove.bind(this));
     window.addEventListener("mousedown", this.mouseClick.bind(this));
+    window.addEventListener("mouseup", this.mouseup.bind(this));
   }
 
+  // 鼠标抬起
+  private mouseup(e: MouseEvent) {
+    let arm = this.limbsInstance["arm"][0];
+    gsap.to(arm.rotation, {
+      duration: 0.08,
+      x: 0,
+      ease: "power1.in",
+    });
+  }
+
+  // 鼠标点击
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
       let arm = this.limbsInstance["arm"][0];
       gsap.to(arm.rotation, {
-        duration: 0.3,
+        duration: 0.08,
         x: -0.8,
         ease: "power1.out",
       });
     }
   }
 
+  // 移动人物朝向
   private CameraMove(e: MouseEvent) {
     let x = 0;
     let y = 0;
@@ -104,6 +117,7 @@ export default class {
     if (angle <= 75) this.limbsInstance.head[0].rotation.x = y;
   }
 
+  // 手脚并行
   private commonSwing(type, t) {
     if (this.enableShowAction) {
       this.limbsInstance[type].forEach((m: THREE.Mesh) => {
@@ -114,12 +128,14 @@ export default class {
     }
   }
 
+  // 清除人物肢体部位
   private clearPersonLimbs() {
     for (const k in this.limbsInstance) {
       this.limbsInstance[k] = [];
     }
   }
 
+  // 构建人物
   public Builder() {
     this.index = 0;
     this.clearPersonLimbs();
@@ -147,6 +163,7 @@ export default class {
     drawCore.scene.add(this.personArea);
   }
 
+  // 创建人物肢体
   private createLimb({
     type,
     order,
@@ -196,10 +213,10 @@ export default class {
     obj.position.set(x, y + siblingHeight + (order != 1 ? 0.5 : 0), z);
     obj.userData["secondary"] = secondary;
 
-    let axes = new THREE.AxesHelper(5);
-    (axes.material as THREE.MeshBasicMaterial).depthTest = false;
-    axes.renderOrder = 1;
-    obj.add(axes);
+    // let axes = new THREE.AxesHelper(5);
+    // (axes.material as THREE.MeshBasicMaterial).depthTest = false;
+    // axes.renderOrder = 1;
+    // obj.add(axes);
 
     if (parentType) {
       this.limbsInstance[parentType][0].children[0].add(obj);
@@ -213,16 +230,19 @@ export default class {
       drawCore.drawActivity[type] = this.ShowAction[type];
   }
 
+  // 初始化人物定位
   public reposition() {
     this.personArea.position.set(0, 0, 0);
     this.personArea.rotation.set(0, 0, 0);
   }
 
+  // 重新构建人物
   public reBuilderPerson() {
     this.destroy();
     this.Builder();
   }
 
+  // 向前走
   private up() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
@@ -230,24 +250,29 @@ export default class {
     this.personArea.position.addScaledVector(v3, -1);
   }
 
+  // 向后走
   private bottom() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
     v3.crossVectors(this.personArea.up, v3);
     this.personArea.position.addScaledVector(v3, 1);
   }
+  // 向左
   private left() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
     this.personArea.position.addScaledVector(v3, 1);
   }
+  // 向右
   private right() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
     this.personArea.position.addScaledVector(v3, -1);
   }
 
+  // 是否在跳跃途中
   toJump = false;
+  // 跳跃
   private jump() {
     if (!this.toJump) {
       this.toJump = true;
@@ -269,22 +294,38 @@ export default class {
     }
   }
 
+  // 键盘按下触发事件
+  activateKeyCounts = 0;
   private Activity(end: boolean, e: KeyboardEvent) {
     if (!this.play) return;
     let code = e.code.toLowerCase();
     if (this.keyMaps[code]) {
       if (!end) {
         if (!drawCore.drawActivity["person" + code]) {
+          this.activateKeyCounts++;
           this.enableShowAction = true;
           drawCore.drawActivity["person" + code] = this.keyMaps[code];
         }
       } else {
-        if (this.enableShowAction) this.enableShowAction = false;
+        this.activateKeyCounts--;
+        if (this.activateKeyCounts == 0 && this.enableShowAction) {
+          this.enableShowAction = false;
+          ["leg", "arm"].forEach((t) => {
+            this.limbsInstance[t].forEach((m: THREE.Mesh) => {
+              gsap.to(m.rotation, {
+                duration: 0.3,
+                x: 0,
+                ease: "power1.in",
+              });
+            });
+          });
+        }
         delete drawCore.drawActivity["person" + code];
       }
     }
   }
 
+  // 释放人物所有模型及资源
   public destroy() {
     let childrens = [];
     targetAcquisitor.GetAllChildren(this.personArea, childrens);
