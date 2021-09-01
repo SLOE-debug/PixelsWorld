@@ -72,6 +72,12 @@ export default class {
 
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
+      let arm = this.limbsInstance["arm"][0];
+      gsap.to(arm.rotation, {
+        duration: 0.3,
+        x: -0.8,
+        ease: "power1.out",
+      });
     }
   }
 
@@ -99,14 +105,16 @@ export default class {
   }
 
   private commonSwing(type, t) {
-    this.limbsInstance[type].forEach((m: THREE.Mesh) => {
-      let n = Math.sin(t / this.personSpeed) * 36;
-      if (m.userData["secondary"]) n = -n;
-      m.rotation.x = this.enableShowAction ? THREE.MathUtils.degToRad(n) : 0;
-    });
+    if (this.enableShowAction) {
+      this.limbsInstance[type].forEach((m: THREE.Mesh) => {
+        let n = Math.sin(t / this.personSpeed) * 36;
+        if (m.userData["secondary"]) n = -n;
+        m.rotation.x = THREE.MathUtils.degToRad(n);
+      });
+    }
   }
 
-  private clearPersonModule() {
+  private clearPersonLimbs() {
     for (const k in this.limbsInstance) {
       this.limbsInstance[k] = [];
     }
@@ -114,7 +122,7 @@ export default class {
 
   public Builder() {
     this.index = 0;
-    this.clearPersonModule();
+    this.clearPersonLimbs();
     this.limbs.forEach(this.createLimb.bind(this));
     if (this.headCamera) this.headCamera.removeFromParent();
     this.headCamera = new THREE.PerspectiveCamera(
@@ -188,10 +196,10 @@ export default class {
     obj.position.set(x, y + siblingHeight + (order != 1 ? 0.5 : 0), z);
     obj.userData["secondary"] = secondary;
 
-    // let axes = new THREE.AxesHelper(5);
-    // (axes.material as THREE.MeshBasicMaterial).depthTest = false;
-    // axes.renderOrder = 1;
-    // obj.add(axes);
+    let axes = new THREE.AxesHelper(5);
+    (axes.material as THREE.MeshBasicMaterial).depthTest = false;
+    axes.renderOrder = 1;
+    obj.add(axes);
 
     if (parentType) {
       this.limbsInstance[parentType][0].children[0].add(obj);

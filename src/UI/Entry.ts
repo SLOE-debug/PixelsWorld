@@ -85,8 +85,12 @@ class Entry {
     this.light = new THREE.DirectionalLight("white", 1);
     this.light.position.set(-10, 21, 15);
     this.light.target.position.set(0, -3, 8);
-    this.light.shadow.camera.bottom = -20;
-    this.light.shadow.camera.top = 50;
+    this.light.shadow.mapSize.width = 1024;
+    this.light.shadow.mapSize.height = 1024;
+    this.light.shadow.camera.bottom = -100;
+    this.light.shadow.camera.top = 100;
+    this.light.shadow.camera.left = -100;
+    this.light.shadow.camera.right = 100;
     this.light.shadow.camera.near = 0.1;
     this.light.shadow.camera.far = 100;
     this.light.castShadow = true;
