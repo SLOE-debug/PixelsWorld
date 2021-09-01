@@ -5,8 +5,6 @@ import ModifyPersonHelp from "../PersonModels/ModifyPersonHelp";
 import * as THREE from "three";
 import Startup from "../kernel/Startup";
 
-import { gsap } from "gsap";
-
 class Entry {
   showArea = [
     ["menu", "modifyPerson", "paly"],
@@ -53,11 +51,6 @@ class Entry {
         (this[id] as JQuery<HTMLElement>).on(eName, this.eles[id][eName]);
       }
     }
-    gsap.to(this.person.personArea.rotation, {
-      duration: 1,
-      y: Math.PI * 2,
-      ease: "bounce",
-    });
   }
 
   private createPersonArea() {

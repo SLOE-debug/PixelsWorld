@@ -1,5 +1,6 @@
 import { defaultLimbs } from "../units/common";
 import * as THREE from "three";
+import { gsap } from "gsap";
 
 export type limb = {
   name: string;
@@ -190,7 +191,7 @@ export default class {
     // let axes = new THREE.AxesHelper(5);
     // (axes.material as THREE.MeshBasicMaterial).depthTest = false;
     // axes.renderOrder = 1;
-    // mesh.add(axes);
+    // obj.add(axes);
 
     if (parentType) {
       this.limbsInstance[parentType][0].children[0].add(obj);
@@ -238,11 +239,26 @@ export default class {
     this.personArea.position.addScaledVector(v3, -1);
   }
 
+  toJump = false;
   private jump() {
-    let v3 = new THREE.Vector3();
-    v3.setFromMatrixColumn(this.personArea.matrix, 0);
-    v3.y -= 30;
-    this.personArea.position.addScaledVector(v3, -1);
+    if (!this.toJump) {
+      this.toJump = true;
+      gsap.to(this.personArea.position, {
+        duration: 0.3,
+        y: this.personArea.position.y + 20,
+        ease: "power1.out",
+        onComplete: () => {
+          gsap.to(this.personArea.position, {
+            duration: 0.25,
+            y: this.personArea.position.y - 20,
+            ease: "power1.in",
+            onComplete: () => {
+              this.toJump = false;
+            },
+          });
+        },
+      });
+    }
   }
 
   private Activity(end: boolean, e: KeyboardEvent) {
