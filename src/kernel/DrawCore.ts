@@ -47,6 +47,7 @@ class DrawCore {
     }
   }
 
+  // 跳跃
   private ResetSize() {
     let w = this.canvas.clientWidth;
     let h = this.canvas.clientHeight;

@@ -1,4 +1,4 @@
-import { defaultLimbs } from "../units/common";
+import { defaultLimbs, throttle } from "../units/common";
 import * as THREE from "three";
 import { gsap } from "gsap";
 
@@ -17,7 +17,7 @@ export type limb = {
   parentType?: "leg" | "arm" | "head" | "body";
 };
 
-export default class {
+export default class Person {
   public personArea: THREE.Object3D = new THREE.Object3D();
   public limbs: Array<limb> = defaultLimbs();
   public enableShowAction = false;
@@ -74,22 +74,42 @@ export default class {
   // 鼠标抬起
   private mouseup(e: MouseEvent) {
     let arm = this.limbsInstance["arm"][0];
-    gsap.to(arm.rotation, {
-      duration: 0.08,
-      x: 0,
-      ease: "power1.in",
+    // gsap.to(arm.rotation, {
+    //   duration: 0.08,
+    //   x: 0,
+    //   ease: "power1.in",
+    // });
+  }
+
+  @throttle(0.2)
+  private unarmedHit() {
+    let arm = this.limbsInstance["arm"][0];
+    let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 1.5;
+    let tl = gsap.timeline({
+      onComplete() {
+        gsap.to(arm.rotation, {
+          duration: 0.1,
+          x: 0,
+          z: 0,
+          ease: "circ.inOut",
+        });
+      },
+    });
+    tl.to(arm.rotation, {
+      duration: 0.1,
+      x: armx,
+      ease: "circ.inOut",
+    }).to(arm.rotation, {
+      duration: 0.1,
+      z: 0.3,
+      ease: "circ.inOut",
     });
   }
 
   // 鼠标点击
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
-      let arm = this.limbsInstance["arm"][0];
-      gsap.to(arm.rotation, {
-        duration: 0.08,
-        x: -0.8,
-        ease: "power1.out",
-      });
+      this.unarmedHit();
     }
   }
 
@@ -270,28 +290,21 @@ export default class {
     this.personArea.position.addScaledVector(v3, -1);
   }
 
-  // 是否在跳跃途中
-  toJump = false;
   // 跳跃
+  @throttle(0.55)
   private jump() {
-    if (!this.toJump) {
-      this.toJump = true;
-      gsap.to(this.personArea.position, {
-        duration: 0.3,
-        y: this.personArea.position.y + 20,
-        ease: "power1.out",
-        onComplete: () => {
-          gsap.to(this.personArea.position, {
-            duration: 0.25,
-            y: this.personArea.position.y - 20,
-            ease: "power1.in",
-            onComplete: () => {
-              this.toJump = false;
-            },
-          });
-        },
-      });
-    }
+    gsap.to(this.personArea.position, {
+      duration: 0.3,
+      y: this.personArea.position.y + 20,
+      ease: "power1.out",
+      onComplete: () => {
+        gsap.to(this.personArea.position, {
+          duration: 0.25,
+          y: this.personArea.position.y - 20,
+          ease: "power1.in",
+        });
+      },
+    });
   }
 
   // 键盘按下触发事件
