@@ -81,7 +81,7 @@ export default class Person {
     // });
   }
 
-  @throttle(0.2)
+  @throttle(0.35)
   private unarmedHit() {
     let arm = this.limbsInstance["arm"][0];
     let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 1.5;
@@ -100,7 +100,7 @@ export default class Person {
       x: armx,
       ease: "circ.inOut",
     }).to(arm.rotation, {
-      duration: 0.1,
+      duration: 0.15,
       z: 0.3,
       ease: "circ.inOut",
     });
@@ -109,6 +109,7 @@ export default class Person {
   // 鼠标点击
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
+      if (this.state == "modify") return;
       this.unarmedHit();
     }
   }
