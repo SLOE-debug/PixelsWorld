@@ -11,6 +11,7 @@ class DrawCore {
   public set camera(v: THREE.PerspectiveCamera) {
     if (this._camera) this.oldcameras.push(this._camera.clone());
     this._camera = v;
+    this.updateCameraAspect();
   }
 
   private stats: Stats;
@@ -20,6 +21,11 @@ class DrawCore {
   constructor() {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#179987");
+    this.canvas = document.getElementById("c") as HTMLCanvasElement;
+    this.render = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: true,
+    });
     this.camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
@@ -27,27 +33,25 @@ class DrawCore {
       1000
     );
     this.camera.position.set(0, 10, 40);
-    this.canvas = document.getElementById("c") as HTMLCanvasElement;
-    this.render = new THREE.WebGLRenderer({
-      canvas: this.canvas,
-      antialias: true,
-    });
     this.render.shadowMap.enabled = true;
     this.render.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.stats = new Stats();
-    this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-    document.body.appendChild(this.stats.dom);
+    window.onresize = () => {
+      this.updateCameraAspect();
+    };
+    // this.stats = new Stats();
+    // this.stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    // document.body.appendChild(this.stats.dom);
     requestAnimationFrame(this.draw.bind(this));
   }
 
   public backCamera() {
     if (this.oldcameras.length > 0) {
       this._camera = this.oldcameras[0];
+      this.updateCameraAspect();
       this.oldcameras.shift();
     }
   }
 
-  // 跳跃
   private ResetSize() {
     let w = this.canvas.clientWidth;
     let h = this.canvas.clientHeight;
@@ -56,17 +60,21 @@ class DrawCore {
     return needReset;
   }
 
+  private updateCameraAspect() {
+    this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+    this.camera.updateProjectionMatrix();
+  }
+
   private draw(t) {
     requestAnimationFrame(this.draw.bind(this));
-    this.stats.begin();
+    // this.stats.begin();
     if (this.ResetSize()) {
-      this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
-      this.camera.updateProjectionMatrix();
+      this.updateCameraAspect();
     }
     for (const func in this.drawActivity) {
       this.drawActivity[func](t);
     }
-    this.stats.end();
+    // this.stats.end();
     this.render.render(this.scene, this.camera);
   }
 }

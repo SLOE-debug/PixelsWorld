@@ -103,7 +103,8 @@ class Entry {
   private createFloor() {
     let wall = new THREE.PlaneGeometry(100, 100);
     let wallmater = new THREE.MeshPhongMaterial({
-      color: "#EE6B3C",
+      // color: "#EE6B3C",
+      color: "#60ADA7",
       side: THREE.DoubleSide,
     });
     this.wallmesh = new THREE.Mesh(wall, wallmater);

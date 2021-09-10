@@ -85,21 +85,19 @@ export function defaultLimbs() {
   ] as Array<limb>;
 }
 
-let throttleInstance = {};
-
 export function throttle(millisecond: number) {
   return function (
     target,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ) {
-    let throttleIdentity = target.constructor.name + "_" + propertyKey;
+    let time;
     descriptor.value = (function (func: Function) {
       return function () {
-        if (!throttleInstance[throttleIdentity]) {
+        if (!time) {
           func.apply(this, arguments);
-          throttleInstance[throttleIdentity] = setTimeout(() => {
-            throttleInstance[throttleIdentity] = null;
+          time = setTimeout(() => {
+            time = null;
           }, millisecond * 1000);
         }
       };

@@ -21,17 +21,12 @@ export default class Person {
   public personArea: THREE.Object3D = new THREE.Object3D();
   public limbs: Array<limb> = defaultLimbs();
   public enableShowAction = false;
-  private personSpeed = 150;
   private keyMaps = {
     keyw: this.up.bind(this),
     keys: this.bottom.bind(this),
     keya: this.left.bind(this),
     keyd: this.right.bind(this),
     space: this.jump.bind(this),
-  };
-  private ShowAction = {
-    leg: this.commonSwing.bind(this, "leg"),
-    arm: this.commonSwing.bind(this, "arm"),
   };
   public limbsInstance: { [x: string]: Array<THREE.Object3D> } = {
     leg: [],
@@ -61,6 +56,16 @@ export default class Person {
     this._play = v;
   }
 
+  // 肢体运动的时间步长
+  public limbStepSize = 0.4;
+  // 手脚并行时间线
+  private limbsMotion = gsap.timeline({
+    paused: true,
+    repeatDelay: 1,
+    onComplete: () => {
+      this.limbsMotion.restart();
+    },
+  });
   constructor(_limbs?: Array<limb>) {
     if (_limbs) this.limbs = _limbs;
     this.Builder();
@@ -69,24 +74,63 @@ export default class Person {
     window.addEventListener("mousemove", this.CameraMove.bind(this));
     window.addEventListener("mousedown", this.mouseClick.bind(this));
     window.addEventListener("mouseup", this.mouseup.bind(this));
+    this.initLimbsMotion();
+  }
+
+  // 初始化手脚运动
+  private initLimbsMotion() {
+    let range = 0.5;
+    ["leg", "arm"].forEach((l) => {
+      this.limbsInstance[l].forEach((m: THREE.Mesh) => {
+        this.limbsMotion.to(
+          m.rotation,
+          {
+            duration: this.limbStepSize / 2,
+            x: m.userData["secondary"] ? -range : range,
+            ease: "none",
+          },
+          0
+        );
+        this.limbsMotion.to(
+          m.rotation,
+          {
+            duration: this.limbStepSize,
+            x: m.userData["secondary"] ? range : -range,
+            ease: "none",
+          },
+          ">"
+        );
+        this.limbsMotion.to(
+          m.rotation,
+          {
+            duration: this.limbStepSize / 2,
+            x: 0,
+            ease: "none",
+          },
+          ">"
+        );
+      });
+    });
+  }
+
+  // 取消手脚运动
+  private cancelLimbsMotion() {
+    this.limbsMotion.seek(0);
+    this.limbsMotion.pause();
   }
 
   // 鼠标抬起
   private mouseup(e: MouseEvent) {
-    let arm = this.limbsInstance["arm"][0];
-    // gsap.to(arm.rotation, {
-    //   duration: 0.08,
-    //   x: 0,
-    //   ease: "power1.in",
-    // });
+    delete drawCore.drawActivity["personUnarmedHit"];
   }
 
-  @throttle(0.35)
+  // 空手打击
+  @throttle(0.3)
   private unarmedHit() {
     let arm = this.limbsInstance["arm"][0];
     let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 1.5;
     let tl = gsap.timeline({
-      onComplete() {
+      onComplete: () => {
         gsap.to(arm.rotation, {
           duration: 0.1,
           x: 0,
@@ -96,7 +140,7 @@ export default class Person {
       },
     });
     tl.to(arm.rotation, {
-      duration: 0.1,
+      duration: 0.15,
       x: armx,
       ease: "circ.inOut",
     }).to(arm.rotation, {
@@ -105,12 +149,11 @@ export default class Person {
       ease: "circ.inOut",
     });
   }
-
   // 鼠标点击
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
       if (this.state == "modify") return;
-      this.unarmedHit();
+      drawCore.drawActivity["personUnarmedHit"] = this.unarmedHit.bind(this);
     }
   }
 
@@ -137,16 +180,34 @@ export default class Person {
     let angle = Math.abs(THREE.MathUtils.radToDeg(y));
     if (angle <= 75) this.limbsInstance.head[0].rotation.x = y;
   }
-
-  // 手脚并行
-  private commonSwing(type, t) {
-    if (this.enableShowAction) {
-      this.limbsInstance[type].forEach((m: THREE.Mesh) => {
-        let n = Math.sin(t / this.personSpeed) * 36;
-        if (m.userData["secondary"]) n = -n;
-        m.rotation.x = THREE.MathUtils.degToRad(n);
+  // 手脚并行--弃用
+  @throttle(0.8)
+  private limbsSwing() {
+    ["leg", "arm"].forEach((l) => {
+      this.limbsInstance[l].forEach((m: THREE.Mesh) => {
+        let range = 0.5;
+        if (m.userData["secondary"]) range = -range;
+        gsap.to(m.rotation, {
+          duration: this.limbStepSize,
+          x: range,
+          ease: "none",
+          onComplete: () => {
+            gsap.to(m.rotation, {
+              duration: this.limbStepSize,
+              x: -range,
+              ease: "none",
+            });
+          },
+        });
       });
-    }
+    });
+    // if (this.enableShowAction) {
+    //   this.limbsInstance[type].forEach((m: THREE.Mesh) => {
+    //     let n = Math.sin(t / this.personSpeed) * 36;
+    //     if (m.userData["secondary"]) n = -n;
+    //     m.rotation.x = THREE.MathUtils.degToRad(n);
+    //   });
+    // }
   }
 
   // 清除人物肢体部位
@@ -247,8 +308,6 @@ export default class Person {
     this.index++;
 
     this.limbsInstance[type].push(obj);
-    if (!drawCore.drawActivity[type] && this.ShowAction[type])
-      drawCore.drawActivity[type] = this.ShowAction[type];
   }
 
   // 初始化人物定位
@@ -263,12 +322,14 @@ export default class Person {
     this.Builder();
   }
 
+  public stepSize = 0.5;
+
   // 向前走
   private up() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
     v3.crossVectors(this.personArea.up, v3);
-    this.personArea.position.addScaledVector(v3, -1);
+    this.personArea.position.addScaledVector(v3, -this.stepSize);
   }
 
   // 向后走
@@ -276,19 +337,19 @@ export default class Person {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
     v3.crossVectors(this.personArea.up, v3);
-    this.personArea.position.addScaledVector(v3, 1);
+    this.personArea.position.addScaledVector(v3, this.stepSize);
   }
   // 向左
   private left() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
-    this.personArea.position.addScaledVector(v3, 1);
+    this.personArea.position.addScaledVector(v3, this.stepSize);
   }
   // 向右
   private right() {
     let v3 = new THREE.Vector3();
     v3.setFromMatrixColumn(this.personArea.matrix, 0);
-    this.personArea.position.addScaledVector(v3, -1);
+    this.personArea.position.addScaledVector(v3, -this.stepSize);
   }
 
   // 跳跃
@@ -309,30 +370,25 @@ export default class Person {
   }
 
   // 键盘按下触发事件
-  activateKeyCounts = 0;
+  activateKeys: Array<string> = [];
   private Activity(end: boolean, e: KeyboardEvent) {
     if (!this.play) return;
     let code = e.code.toLowerCase();
     if (this.keyMaps[code]) {
       if (!end) {
         if (!drawCore.drawActivity["person" + code]) {
-          this.activateKeyCounts++;
-          this.enableShowAction = true;
+          this.activateKeys.push(code);
+          if (this.activateKeys.length != 0 && code != "space")
+            this.limbsMotion.play();
           drawCore.drawActivity["person" + code] = this.keyMaps[code];
         }
       } else {
-        this.activateKeyCounts--;
-        if (this.activateKeyCounts == 0 && this.enableShowAction) {
-          this.enableShowAction = false;
-          ["leg", "arm"].forEach((t) => {
-            this.limbsInstance[t].forEach((m: THREE.Mesh) => {
-              gsap.to(m.rotation, {
-                duration: 0.3,
-                x: 0,
-                ease: "power1.in",
-              });
-            });
-          });
+        this.activateKeys.pop();
+        if (
+          this.activateKeys.length == 0 ||
+          (this.activateKeys.length == 1 && this.activateKeys[0] == "space")
+        ) {
+          this.cancelLimbsMotion();
         }
         delete drawCore.drawActivity["person" + code];
       }
