@@ -75,6 +75,7 @@ export default class Person {
     window.addEventListener("mousedown", this.mouseClick.bind(this));
     window.addEventListener("mouseup", this.mouseup.bind(this));
     this.initLimbsMotion();
+    // this.limbsMotion.play();
   }
 
   // 初始化手脚运动
@@ -82,33 +83,34 @@ export default class Person {
     let range = 0.5;
     ["leg", "arm"].forEach((l) => {
       this.limbsInstance[l].forEach((m: THREE.Mesh) => {
-        this.limbsMotion.to(
-          m.rotation,
-          {
-            duration: this.limbStepSize / 2,
-            x: m.userData["secondary"] ? -range : range,
-            ease: "none",
-          },
-          0
-        );
-        this.limbsMotion.to(
-          m.rotation,
-          {
-            duration: this.limbStepSize,
-            x: m.userData["secondary"] ? range : -range,
-            ease: "none",
-          },
-          ">"
-        );
-        this.limbsMotion.to(
-          m.rotation,
-          {
-            duration: this.limbStepSize / 2,
-            x: 0,
-            ease: "none",
-          },
-          ">"
-        );
+        this.limbsMotion
+          .to(
+            m.rotation,
+            {
+              duration: this.limbStepSize / 2,
+              x: m.userData["secondary"] ? -range : range,
+              ease: "none",
+            },
+            0
+          )
+          .to(
+            m.rotation,
+            {
+              duration: this.limbStepSize,
+              x: m.userData["secondary"] ? range : -range,
+              ease: "none",
+            },
+            ">"
+          )
+          .to(
+            m.rotation,
+            {
+              duration: this.limbStepSize / 2,
+              x: 0,
+              ease: "none",
+            },
+            ">"
+          );
       });
     });
   }
@@ -121,14 +123,14 @@ export default class Person {
 
   // 鼠标抬起
   private mouseup(e: MouseEvent) {
-    delete drawCore.drawActivity["personUnarmedHit"];
+    delete drawCore.drawActivity["personRightAction"];
   }
 
   // 空手打击
   @throttle(0.3)
   private unarmedHit() {
     let arm = this.limbsInstance["arm"][0];
-    let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 1.5;
+    let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 2;
     let tl = gsap.timeline({
       onComplete: () => {
         gsap.to(arm.rotation, {
@@ -153,7 +155,7 @@ export default class Person {
   private mouseClick(e: MouseEvent) {
     if (e.buttons == 1) {
       if (this.state == "modify") return;
-      drawCore.drawActivity["personUnarmedHit"] = this.unarmedHit.bind(this);
+      drawCore.drawActivity["personRightAction"] = this.unarmedHit.bind(this);
     }
   }
 
@@ -178,7 +180,16 @@ export default class Person {
 
     this.personArea.rotation.y = x;
     let angle = Math.abs(THREE.MathUtils.radToDeg(y));
-    if (angle <= 75) this.limbsInstance.head[0].rotation.x = y;
+    if (angle <= 45) {
+      this.limbsInstance.head[0].rotation.x = y;
+    } else {
+      if (angle <= 90) {
+        console.log(angle);
+
+        this.headCamera.rotation.x =
+          y - this.limbsInstance.head[0].rotation.x - Math.PI;
+      }
+    }
   }
   // 手脚并行--弃用
   @throttle(0.8)
@@ -232,14 +243,14 @@ export default class Person {
     let headPos = new THREE.Vector3(
       0,
       this.headlimb.size / 2,
-      this.headlimb.size
+      this.headlimb.size / 2
     );
     this.headCamera.position.copy(headPos);
     headPos.z += 1;
     this.headCamera.lookAt(headPos);
 
-    // let helper = new THREE.CameraHelper(this.headCamera);
-    // drawCore.scene.add(helper);
+    let helper = new THREE.CameraHelper(this.headCamera);
+    drawCore.scene.add(helper);
 
     this.limbsInstance.head[0].add(this.headCamera);
     drawCore.scene.add(this.personArea);
