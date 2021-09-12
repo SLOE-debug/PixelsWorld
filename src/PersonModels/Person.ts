@@ -75,7 +75,6 @@ export default class Person {
     window.addEventListener("mousedown", this.mouseClick.bind(this));
     window.addEventListener("mouseup", this.mouseup.bind(this));
     this.initLimbsMotion();
-    // this.limbsMotion.play();
   }
 
   // 初始化手脚运动
@@ -130,26 +129,24 @@ export default class Person {
   @throttle(0.3)
   private unarmedHit() {
     let arm = this.limbsInstance["arm"][0];
-    let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 2;
-    let tl = gsap.timeline({
-      onComplete: () => {
-        gsap.to(arm.rotation, {
-          duration: 0.1,
-          x: 0,
-          z: 0,
-          ease: "circ.inOut",
-        });
-      },
-    });
+    let armx = this.limbsInstance["head"][0].rotation.x - Math.PI / 1.5;
+    let tl = gsap.timeline({});
     tl.to(arm.rotation, {
       duration: 0.15,
       x: armx,
       ease: "circ.inOut",
-    }).to(arm.rotation, {
-      duration: 0.15,
-      z: 0.3,
-      ease: "circ.inOut",
-    });
+    })
+      .to(arm.rotation, {
+        duration: 0.15,
+        z: 0.3,
+        ease: "circ.inOut",
+      })
+      .to(arm.rotation, {
+        duration: 0.1,
+        x: 0,
+        z: 0,
+        ease: "circ.inOut",
+      });
   }
   // 鼠标点击
   private mouseClick(e: MouseEvent) {
@@ -177,18 +174,14 @@ export default class Person {
           90
       );
     }
-
     this.personArea.rotation.y = x;
     let angle = Math.abs(THREE.MathUtils.radToDeg(y));
-    if (angle <= 45) {
+    if (angle <= 75) {
+      let mater = (this.limbsInstance["body"][0].children[0] as THREE.Mesh)
+        .material as THREE.MeshPhongMaterial;
+      if (angle > 45 && this.play) mater.opacity = 0;
+      else mater.opacity = 1;
       this.limbsInstance.head[0].rotation.x = y;
-    } else {
-      if (angle <= 90) {
-        console.log(angle);
-
-        this.headCamera.rotation.x =
-          y - this.limbsInstance.head[0].rotation.x - Math.PI;
-      }
     }
   }
   // 手脚并行--弃用
@@ -242,15 +235,15 @@ export default class Person {
     );
     let headPos = new THREE.Vector3(
       0,
-      this.headlimb.size / 2,
+      this.headlimb.size / 8,
       this.headlimb.size / 2
     );
     this.headCamera.position.copy(headPos);
     headPos.z += 1;
     this.headCamera.lookAt(headPos);
 
-    let helper = new THREE.CameraHelper(this.headCamera);
-    drawCore.scene.add(helper);
+    // let helper = new THREE.CameraHelper(this.headCamera);
+    // drawCore.scene.add(helper);
 
     this.limbsInstance.head[0].add(this.headCamera);
     drawCore.scene.add(this.personArea);
@@ -273,7 +266,10 @@ export default class Person {
     if (type == "head") this.headlimb = this.limbs[this.index];
     let obj = new THREE.Object3D();
     let box = new THREE.BoxGeometry(size, height, size);
-    let mater = new THREE.MeshPhongMaterial({ color: color });
+    let mater = new THREE.MeshPhongMaterial({
+      color: color,
+      transparent: true,
+    });
     let mesh = new THREE.Mesh(box, mater);
     mesh.name = name;
     let existOrder = {};
